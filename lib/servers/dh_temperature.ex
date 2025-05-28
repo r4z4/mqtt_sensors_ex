@@ -2,12 +2,17 @@ defmodule MqttSensors.DhTemperature do
   @moduledoc false
 
   use GenServer
+  alias Phoenix.PubSub
+
+  @topic "dh_data"
 
   def start_link([]) do
     GenServer.start_link(__MODULE__, [])
+    # Process.flag(:trap_exit, true)
   end
 
   def init([]) do
+    # Handle if MQTT Broker not Up
     interval = Application.get_env(:mqtt_sensors, :interval)
     # dbg(interval)
     emqtt_opts = Application.get_env(:mqtt_sensors, :emqtt_dh)
@@ -29,8 +34,10 @@ defmodule MqttSensors.DhTemperature do
   end
 
   def handle_continue(:start_emqtt, %{pid: pid} = st) do
+    IO.puts("Handle Continue DH")
     {:ok, _} = :emqtt.connect(pid)
     {:ok, _, _} = :emqtt.subscribe(pid, {"esp32/sensor_data", 1})
+
     {:noreply, st}
   end
 
@@ -64,6 +71,14 @@ defmodule MqttSensors.DhTemperature do
     handle_publish(parse_topic(publish), publish, st)
   end
 
+  def handle_info({:DOWN, _, :process, _pid, reason}, state) do
+    # Logger.info("KILLED PROCESS")
+    # Logger.info(Kernel.inspect(_pid))
+    # Logger.info(Kernel.inspect(state))
+    # Logger.info(Kernel.inspect(reason))
+    IO.puts("KILLED PROCESS #{_pid}, #{reason}, #{state}")
+  end
+
   defp handle_publish("humidity", %{payload: payload}, st) do
     dbg(st[:humidity])
     IO.puts("Receiving Humidity")
@@ -82,10 +97,21 @@ defmodule MqttSensors.DhTemperature do
   #   packet_id: :undefined,
   #   client_pid: #PID<0.674.0>
   # }
+
+  # Cannot test private functions. Test implementation, or make public
   defp handle_publish(topic, data, st) do
     IO.puts("Handling Publish")
     dbg(topic)
     dbg(data)
+    # GenServer.cast(SensorsLive, {:publish, data})
+    time = Calendar.strftime(DateTime.utc_now(), "%y-%m-%d %I:%M:%S %p")
+
+    PubSub.broadcast(
+      MqttSensors.PubSub,
+      @topic,
+      {:update, %{topic: @topic, time: time, data: data}}
+    )
+
     {:noreply, st}
   end
 

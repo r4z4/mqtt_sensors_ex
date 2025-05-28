@@ -18,8 +18,10 @@ defmodule MqttSensors.Application do
       # {MqttSensors.Worker, arg},
       # Start to serve requests, typically the last entry
       MqttSensorsWeb.Endpoint,
-      MqttSensors.DhTemperature,
-      MqttSensors.UltrasonicSensor
+      MqttSensors.SensorServerSupervisor
+      # MqttSensors.DhTemperature,
+      # MqttSensors.KeypadSensor,
+      # MqttSensors.UltrasonicSensor
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html

@@ -35,6 +35,15 @@ config :mqtt_sensors, :emqtt_hc,
   password: mqtt_password,
   name: :emqtt_hc
 
+config :mqtt_sensors, :emqtt_keypad,
+  host: mqtt_host,
+  port: mqtt_port,
+  clientid: "sensor_readings_keypad",
+  clean_start: false,
+  username: mqtt_username,
+  password: mqtt_password,
+  name: :emqtt_keypad
+
 config :mqtt_sensors, :interval, 1000
 
 # Configures the endpoint
@@ -81,6 +90,8 @@ config :tailwind,
 
 # Configures Elixir's Logger
 config :logger, :console,
+  handle_otp_reports: true,
+  handle_sasl_reports: true,
   format: "$time $metadata[$level] $message\n",
   metadata: [:request_id]
 
