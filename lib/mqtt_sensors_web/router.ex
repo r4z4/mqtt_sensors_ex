@@ -22,6 +22,7 @@ defmodule MqttSensorsWeb.Router do
 
     get "/", PageController, :home
     live "/sensors", SensorsLive
+    live "/chart", ChartLive
   end
 
   # Other scopes may use custom stacks.

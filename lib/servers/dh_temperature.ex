@@ -12,11 +12,9 @@ defmodule MqttSensors.DhTemperature do
   end
 
   def init([]) do
-    # Handle if MQTT Broker not Up
     interval = Application.get_env(:mqtt_sensors, :interval)
-    # dbg(interval)
     emqtt_opts = Application.get_env(:mqtt_sensors, :emqtt_dh)
-    dbg(emqtt_opts)
+    # dbg(emqtt_opts)
     report_topic = "reports/#{emqtt_opts[:clientid]}/temperature"
     {:ok, pid} = :emqtt.start_link(emqtt_opts)
 
@@ -71,12 +69,12 @@ defmodule MqttSensors.DhTemperature do
     handle_publish(parse_topic(publish), publish, st)
   end
 
-  def handle_info({:DOWN, _, :process, _pid, reason}, state) do
+  def handle_info({:DOWN, _, :process, pid, reason}, state) do
     # Logger.info("KILLED PROCESS")
     # Logger.info(Kernel.inspect(_pid))
     # Logger.info(Kernel.inspect(state))
     # Logger.info(Kernel.inspect(reason))
-    IO.puts("KILLED PROCESS #{_pid}, #{reason}, #{state}")
+    IO.puts("KILLED PROCESS #{pid}, #{reason}, #{state}")
   end
 
   defp handle_publish("humidity", %{payload: payload}, st) do
@@ -85,18 +83,6 @@ defmodule MqttSensors.DhTemperature do
     new_st = %{st | humidity: String.to_integer(payload)}
     {:noreply, new_st}
   end
-
-  # data #=> %{
-  #   dup: false,
-  #   via: #Port<0.36>,
-  #   payload: "Temp: 27.0; Humidity: 53.0",
-  #   topic: "esp32/sensor_data",
-  #   properties: :undefined,
-  #   qos: 0,
-  #   retain: false,
-  #   packet_id: :undefined,
-  #   client_pid: #PID<0.674.0>
-  # }
 
   # Cannot test private functions. Test implementation, or make public
   defp handle_publish(topic, data, st) do

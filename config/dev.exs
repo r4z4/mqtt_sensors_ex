@@ -2,8 +2,8 @@ import Config
 
 # Configure your database
 config :mqtt_sensors, MqttSensors.Repo,
-  username: "postgres",
-  password: "postgres",
+  username: System.get_env("DB_USERNAME"),
+  password: System.get_env("DB_PASSWORD"),
   hostname: "localhost",
   database: "mqtt_sensors_dev",
   stacktrace: true,

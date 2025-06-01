@@ -13,9 +13,7 @@ defmodule MqttSensors.UltrasonicSensor do
   def init([]) do
     interval = Application.get_env(:mqtt_sensors, :interval)
     emqtt_opts = Application.get_env(:mqtt_sensors, :emqtt_hc)
-    # Connect as different client? Can I connect as same client?
-    # emqtt_opts[:clientid] = "ultrasonic_client"
-    # report_topic = "reports/#{emqtt_opts[:clientid]}/temperature"
+
     {:ok, pid} = :emqtt.start_link(emqtt_opts)
 
     st = %{
@@ -42,7 +40,7 @@ defmodule MqttSensors.UltrasonicSensor do
   def handle_info({:publish, publish}, state) do
     IO.puts("Received HCSR04")
     dbg(publish)
-    topic = parse_topic(publish)
+    # topic = parse_topic(publish)
     time = Calendar.strftime(DateTime.utc_now(), "%y-%m-%d %I:%M:%S %p")
     # topic = publish[:topic]
     # payload = publish[:payload]

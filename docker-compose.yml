@@ -17,18 +17,5 @@ services:
     restart: "no"
     volumes:
       - pgdata:/var/lib/postgresql/data
-  # pgadmin:
-  #   container_name: pgadmin-mqtt_sensors
-  #   image: dpage/pgadmin4:6.16
-  #   restart: always
-  #   environment:
-  #     PGADMIN_DEFAULT_EMAIL: admin@admin.com
-  #     PGADMIN_DEFAULT_PASSWORD: secret
-  #     PGADMIN_LISTEN_PORT: 80
-  #   ports:
-  #     - "8080:80"
-  #   volumes:
-  #     - pgadmin_data:/var/lib/pgadmin
 volumes:
   pgdata:
-  # pgadmin_data:

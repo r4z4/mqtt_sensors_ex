@@ -7,10 +7,15 @@
 # General application configuration
 import Config
 
-mqtt_username = "admin"
-mqtt_password = "adminpwd"
+# Load ENV var script
+if config_env() in [:dev, :test] do
+  import_config ".env.exs"
+end
+
+mqtt_username = System.get_env("MQTT_USERNAME")
+mqtt_password = System.get_env("MQTT_PASSWORD")
 # Phone IP - Or whatever Broker is
-mqtt_host = "192.168.1.139"
+mqtt_host = System.get_env("MQTT_HOST")
 mqtt_port = 1883
 
 config :mqtt_sensors,

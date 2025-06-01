@@ -18,7 +18,7 @@ defmodule MqttSensors.Application do
       # {MqttSensors.Worker, arg},
       # Start to serve requests, typically the last entry
       MqttSensorsWeb.Endpoint,
-      MqttSensors.SensorServerSupervisor
+      MqttSensors.SensorSupervisor
       # MqttSensors.DhTemperature,
       # MqttSensors.KeypadSensor,
       # MqttSensors.UltrasonicSensor
