@@ -7,8 +7,7 @@ defmodule MqttSensors.Repo.Migrations.CreateSensorJoystickReadings do
       add :x_pos, :integer
       add :y_pos, :integer
       add :btn_pressed, :boolean, default: false, null: false
-
-      timestamps(type: :utc_datetime, updated_at: false)
+      add :created_at, :utc_datetime, default: fragment("NOW()")
     end
   end
 end

@@ -5,8 +5,7 @@ defmodule MqttSensors.Repo.Migrations.CreateSensorKeypadReadings do
     create table(:sensor_keypad_readings) do
       add :time, :naive_datetime
       add :key, :string
-
-      timestamps(type: :utc_datetime, updated_at: false)
+      add :created_at, :utc_datetime, default: fragment("now()")
     end
   end
 end

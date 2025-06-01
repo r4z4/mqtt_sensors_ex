@@ -1,15 +1,17 @@
 defmodule MqttSensors.Repo.Migrations.CreateUsersAuthTables do
   use Ecto.Migration
+  alias MqttSensors.Utils
 
   def change do
     execute "CREATE EXTENSION IF NOT EXISTS citext", ""
 
     create table(:users) do
       add :email, :citext, null: false
+      add :username, :string, null: false
+      add :role, :string, null: false, default: "subadmin"
       add :hashed_password, :string, null: false
-      add :confirmed_at, :utc_datetime
-
-      timestamps(type: :utc_datetime)
+      add :confirmed_at, :naive_datetime
+      add :created_at, :utc_datetime, default: fragment("NOW()")
     end
 
     create unique_index(:users, [:email])

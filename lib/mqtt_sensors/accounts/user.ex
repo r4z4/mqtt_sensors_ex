@@ -1,13 +1,16 @@
 defmodule MqttSensors.Accounts.User do
   use Ecto.Schema
   import Ecto.Changeset
+  alias MqttSensors.Utils
 
   schema "users" do
     field :email, :string
+    field :role, Ecto.Enum, values: Utils.roles()
+    field :username, :string
     field :password, :string, virtual: true, redact: true
     field :hashed_password, :string, redact: true
     field :current_password, :string, virtual: true, redact: true
-    field :confirmed_at, :utc_datetime
+    field :confirmed_at, :naive_datetime
 
     timestamps(type: :utc_datetime)
   end

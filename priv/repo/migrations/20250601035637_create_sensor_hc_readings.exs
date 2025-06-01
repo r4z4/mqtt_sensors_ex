@@ -6,8 +6,7 @@ defmodule MqttSensors.Repo.Migrations.CreateSensorHcReadings do
       add :time, :naive_datetime
       add :inches, :integer
       add :centimeters, :integer
-
-      timestamps(type: :utc_datetime, updated_at: false)
+      add :created_at, :utc_datetime, default: fragment("NOW()")
     end
   end
 end

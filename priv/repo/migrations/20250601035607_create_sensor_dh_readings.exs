@@ -6,8 +6,7 @@ defmodule MqttSensors.Repo.Migrations.CreateSensorDhReadings do
       add :time, :naive_datetime
       add :humidity, :float
       add :temperature, :float
-
-      timestamps(type: :utc_datetime, updated_at: false)
+      add :created_at, :utc_datetime, default: fragment("NOW()")
     end
   end
 end
