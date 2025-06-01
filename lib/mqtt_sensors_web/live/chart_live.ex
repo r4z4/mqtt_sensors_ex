@@ -1,7 +1,10 @@
 defmodule MqttSensorsWeb.ChartLive do
   use MqttSensorsWeb, :live_view
   # import Ecto.Query
-  # alias MqttSensors.Repo
+  alias MqttSensors.Repo
+  # alias Sensor.Dh
+  alias Sensor.Hc
+  # alias Sensor.Joystick
   alias Phoenix.PubSub
   require Logger
 
@@ -52,27 +55,18 @@ defmodule MqttSensorsWeb.ChartLive do
     """
   end
 
-  # def handle_info({:clear, %{topic: topic, time: time, data: data}}, socket) do
-  #   IO.puts("Clearing DH")
-  #   dbg(socket.assigns.streams[:dh_data_stream])
+  # This handles messages from other Elixir Processes
+  # def handle_info({:test_update, %{topic: topic, time: time, x: x, y: y}}, socket) do
+  #   IO.puts(topic)
+  #   map = %{id: time, style: "--x: #{x}; --y: #{y}"}
+  #
+  #   schedule_send_data(x)
   #
   #   {:noreply,
   #    socket
-  #    |> stream(:data_stream, [], reset: true)}
+  #    # |> stream_insert(String.to_existing_atom("#{topic}_stream"), map, limit: -10)
+  #    |> stream_insert(:data_stream, map)}
   # end
-
-  # This handles messages from other Elixir Processes
-  def handle_info({:test_update, %{topic: topic, time: time, x: x, y: y}}, socket) do
-    IO.puts(topic)
-    map = %{id: time, style: "--x: #{x}; --y: #{y}"}
-
-    schedule_send_data(x)
-
-    {:noreply,
-     socket
-     # |> stream_insert(String.to_existing_atom("#{topic}_stream"), map, limit: -10)
-     |> stream_insert(:data_stream, map)}
-  end
 
   # publish #=> %{
   #   dup: false,
@@ -86,8 +80,12 @@ defmodule MqttSensorsWeb.ChartLive do
   #   client_pid: #PID<0.674.0>
   # }
 
+  @impl true
   def handle_info(:clear_stream, socket) do
     IO.puts("Clearing Stream")
+
+    # Before we clear it, save all records to DB. Batch update.
+    persist_stream(socket.assigns.streams.data_stream)
 
     {:noreply,
      socket
@@ -96,6 +94,7 @@ defmodule MqttSensorsWeb.ChartLive do
 
   # This handles messages from other Elixir Processes
   # Match on topic - one handle_info for each topic to update LV state
+  @impl true
   def handle_info({:update, %{topic: topic, time: time, data: data}}, socket) do
     {:ok, int, cm} = parse_string(data[:payload])
     y = int
@@ -132,23 +131,24 @@ defmodule MqttSensorsWeb.ChartLive do
     {:noreply, socket}
   end
 
-  defp schedule_send_data(x_value) do
-    # Send every 5 secs
-    x = x_value + 1
-    random_y = :rand.uniform(20)
+  # defp schedule_send_data(x_value) do
+  #   # Send every 5 secs
+  #   x = x_value + 1
+  #   random_y = :rand.uniform(20)
+  #
+  #   Process.send_after(
+  #     self(),
+  #     {:test_update, %{topic: "whatever", time: x, x: x, y: random_y}},
+  #     5000
+  #   )
+  # end
 
-    Process.send_after(
-      self(),
-      {:test_update, %{topic: "whatever", time: x, x: x, y: random_y}},
-      5000
-    )
-  end
-
+  # Only getting Inches value for now - which is why two int
   defp parse_string(input_string) do
     case String.split(input_string, ";") do
-      [part1, part2] ->
+      [part1, _part2] ->
         case String.split(part1, ": ") do
-          [str, int] -> {:ok, parseInt(int), parseInt(int)}
+          [_str, int] -> {:ok, parseInt(int), parseInt(int)}
         end
 
       _ ->
@@ -160,7 +160,7 @@ defmodule MqttSensorsWeb.ChartLive do
     case String.to_integer(str) do
       # Handle cases where conversion fails, default to 0
       integer_val -> integer_val
-      _ -> 0
+      nil -> 0
     end
   end
 
@@ -168,4 +168,14 @@ defmodule MqttSensorsWeb.ChartLive do
   # defp parse_topic(%{topic: topic}) do
   #   String.split(topic, "/", trim: true)
   # end
+
+  defp persist_stream(stream) do
+    # Prepend current record to the accumulator
+    Enum.reduce([], stream, fn record, acc -> [map_stream_record(record) | acc] end)
+    |> Repo.insert_all(Repo)
+  end
+
+  defp map_stream_record(record) do
+    %Hc{time: record[:time], inches: record[:ins], centimeters: record[:cms]}
+  end
 end
