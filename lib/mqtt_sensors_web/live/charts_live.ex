@@ -10,7 +10,7 @@ defmodule MqttSensorsWeb.ChartsLive do
   alias Phoenix.PubSub
   require Logger
 
-  @topics ~w(dh_data hc_sr04_data keypad_press)
+  @topics ~w(dh_data hc_sr04_data keypad_press photoresistor)
 
   @impl true
   def mount(_params, _session, socket) do
@@ -35,14 +35,16 @@ defmodule MqttSensorsWeb.ChartsLive do
      socket
      |> assign(:hc_sr04_data_x_value, 0)
      |> stream(:hc_sr04_data_stream, [])
+     |> assign(:photoresistor, 0)
+     |> assign(:hsl, "hsl(0, 100%, 0%)")
      |> assign(:dh_data_x_value, 0)
      |> stream(:dh_data_stream, [])}
   end
 
   @impl true
   def render(assigns) do
-    dbg(assigns.streams.dh_data_stream)
-    dbg(assigns.streams.hc_sr04_data_stream)
+    # dbg(assigns.streams.dh_data_stream)
+    # dbg(assigns.streams.hc_sr04_data_stream)
 
     ~H"""
     <div class="w-full">
@@ -71,6 +73,10 @@ defmodule MqttSensorsWeb.ChartsLive do
             <% end %>
           </div>
         </article>
+      </div>
+      <div id="photoresistor">
+        {@photoresistor}
+        <div style={"width: 100px; height: 100px; background-color: #{@hsl};"}></div>
       </div>
     </div>
     """
@@ -126,6 +132,22 @@ defmodule MqttSensorsWeb.ChartsLive do
 
   # This handles messages from other Elixir Processes
   # Match on topic - one handle_info for each topic to update LV state
+  @impl true
+  def handle_info({:update, %{topic: "photoresistor", data: data}}, socket) do
+    brightness =
+      case data do
+        0 -> 0
+        _ -> Kernel.trunc(data / 10)
+      end
+
+    color = "hsl(90 100% #{brightness}%)"
+
+    {:noreply,
+     socket
+     |> assign(:photoresistor, data)
+     |> assign(:hsl, color)}
+  end
+
   @impl true
   def handle_info({:update, %{topic: topic, time: time, data: data}}, socket) do
     IO.puts("LV Handle Info Topic = #{topic}")

@@ -49,6 +49,15 @@ config :mqtt_sensors, :emqtt_keypad,
   password: mqtt_password,
   name: :emqtt_keypad
 
+config :mqtt_sensors, :emqtt_photoresistor,
+  host: mqtt_host,
+  port: mqtt_port,
+  clientid: "sensor_readings_photoresistor",
+  clean_start: false,
+  username: mqtt_username,
+  password: mqtt_password,
+  name: :emqtt_photoresistor
+
 config :mqtt_sensors, :interval, 1000
 
 # Configures the endpoint

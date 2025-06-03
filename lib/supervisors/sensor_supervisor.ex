@@ -11,6 +11,7 @@ defmodule MqttSensors.SensorSupervisor do
       [
         Supervisor.child_spec({MqttSensors.DhTemperature, []}, restart: :temporary),
         Supervisor.child_spec({MqttSensors.KeypadSensor, []}, restart: :temporary),
+        Supervisor.child_spec({MqttSensors.Photoresistor, []}, restart: :temporary),
         Supervisor.child_spec({MqttSensors.UltrasonicSensor, []}, restart: :transient)
       ]
 
