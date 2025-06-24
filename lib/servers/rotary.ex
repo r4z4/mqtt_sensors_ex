@@ -1,93 +1,77 @@
-defmodule MqttSensors.UltrasonicSensor do
+defmodule MqttSensors.Rotary do
   @moduledoc false
 
   use GenServer
   alias Phoenix.PubSub
-  alias MqttSensors.Sensor.Hc
-  alias MqttSensors.Repo
-  @topic "hc_sr04_data"
+
+  @topic "rotary_encoder"
 
   def start_link([]) do
-    GenServer.start_link(__MODULE__, [], name: __MODULE__)
+    GenServer.start_link(__MODULE__, [])
   end
 
   def init([]) do
-    interval = Application.get_env(:mqtt_sensors, :interval)
-    emqtt_opts = Application.get_env(:mqtt_sensors, :emqtt_hc)
+    # interval = Application.get_env(:mqtt_sensors, :interval)
+    emqtt_opts = Application.get_env(:mqtt_sensors, :emqtt_rotary)
 
     {:ok, pid} = :emqtt.start_link(emqtt_opts)
 
-    state = %{pid: pid, stream_data: []}
+    state = %{
+      timer: nil,
+      pid: pid
+    }
 
     {:ok, state, {:continue, :start_emqtt}}
   end
 
-  def handle_continue(:start_emqtt, %{pid: pid} = st) do
-    IO.puts("Handle Continue Ultrasonic")
+  def handle_continue(:start_emqtt, %{pid: pid} = state) do
+    IO.puts("Handle Continue Rotary")
     {:ok, _} = :emqtt.connect(pid)
     IO.puts("Handle Continue on Start")
     emqtt_opts = Application.get_env(:mqtt_sensors, :emqtt)
     _clientid = emqtt_opts[:clientid]
-    {:ok, _, _} = :emqtt.subscribe(pid, {"esp32/sensor_data_hc_sr04", 1})
+    {:ok, _, _} = :emqtt.subscribe(pid, {"esp32/rotary_encoder", 1})
 
-    {:noreply, st}
+    {:noreply, state}
   end
 
   def handle_info({:publish, publish}, state) do
-    IO.puts("Received HCSR04")
+    IO.puts("Received Rotary")
     dbg(publish)
-    now = NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second)
     # topic = parse_topic(publish)
-    time = Calendar.strftime(now, "%y-%m-%d %I:%M:%S %p")
+    time = Calendar.strftime(DateTime.utc_now(), "%y-%m-%d %I:%M:%S %p")
     # topic = publish[:topic]
-    {:ok, ins, cms} = parse_string(publish[:payload])
-
-    # GenServer.call(MqttSensors.DhTemperature, :persist_stream)
+    # "Counter: %d; Dir: %u; Btn: %u"
+    {:ok, ctr, dir, btn} = parse_string(publish[:payload])
+    dbg(publish[:payload])
 
     PubSub.broadcast(
       MqttSensors.PubSub,
       @topic,
-      {:update, %{topic: @topic, time: time, data: %{ins: ins, cms: cms}}}
+      {:update, %{topic: @topic, data: %{ctr: ctr, dir: dir, btn: btn}}}
     )
 
-    # Store in state to persist when it hits 20. But dont use Schema struct (which is dumb)
-    stream_data = %{
-      time: now,
-      inches: ins,
-      centimeters: cms
-    }
-
     # handle_publish(topic, payload, st)
-    {:noreply, Map.put(state, :stream_data, [stream_data | state[:stream_data]])}
-  end
-
-  def handle_cast(:persist_stream, state) do
-    IO.puts("Ultrasonic Persisting Stream")
-
-    # dbg(state[:stream_data])
-
-    # Repo.insert_all(Hc, state[:stream_data])
-
-    {:noreply, Map.put(state, :stream_data, [])}
+    {:noreply, state}
   end
 
   defp parse_topic(%{topic: topic}) do
     String.split(topic, "/", trim: true)
   end
 
-  # Only getting Inches value for now - which is why two int
   defp parse_string(input_string) do
     case String.split(input_string, ";") do
-      [part1, part2] ->
+      [part1, part2, part3] ->
         # [_str, inches] = String.split(part1, ": ")
         # ins = parseInt(int)
-        ins = String.split(part1, ": ") |> Enum.at(1) |> parseInt()
+        ctr = String.split(part1, ": ") |> Enum.at(1) |> parseInt()
         # [_str, centis] = String.split(part2, ": ")
         # cms = parseInt(centis)
-        cms = String.split(part2, ": ") |> Enum.at(1) |> parseInt()
+        dir = String.split(part2, ": ") |> Enum.at(1) |> parseInt()
+        btn = String.split(part3, ": ") |> Enum.at(1) |> parseInt()
 
         # {:ok, String.split(part1, ": ") |> Enum.at(1) |> parseInt(), String.split(part2, ": ") |> Enum.at(1) |> parseInt())
-        {:ok, ins, cms}
+        {:ok, ctr, dir, btn}
 
       _ ->
         {:error, "Invalid string format. Expected 'In: X; Cm: Y'"}

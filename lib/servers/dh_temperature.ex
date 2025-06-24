@@ -46,7 +46,7 @@ defmodule MqttSensors.DhTemperature do
 
   def handle_cast(:persist_stream, state) do
     IO.puts("Dh Persisting Stream")
-    Repo.insert_all(Dh, state[:stream_data])
+    # Repo.insert_all(Dh, state[:stream_data])
     {:noreply, state}
   end
 

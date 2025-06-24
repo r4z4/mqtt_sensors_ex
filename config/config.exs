@@ -49,6 +49,15 @@ config :mqtt_sensors, :emqtt_keypad,
   password: mqtt_password,
   name: :emqtt_keypad
 
+config :mqtt_sensors, :emqtt_ir,
+  host: mqtt_host,
+  port: mqtt_port,
+  clientid: "sensor_readings_ir",
+  clean_start: false,
+  username: mqtt_username,
+  password: mqtt_password,
+  name: :emqtt_ir
+
 config :mqtt_sensors, :emqtt_photoresistor,
   host: mqtt_host,
   port: mqtt_port,
@@ -57,6 +66,42 @@ config :mqtt_sensors, :emqtt_photoresistor,
   username: mqtt_username,
   password: mqtt_password,
   name: :emqtt_photoresistor
+
+config :mqtt_sensors, :emqtt_joystick,
+  host: mqtt_host,
+  port: mqtt_port,
+  clientid: "sensor_readings_joystick",
+  clean_start: false,
+  username: mqtt_username,
+  password: mqtt_password,
+  name: :emqtt_joystick
+
+config :mqtt_sensors, :emqtt_rotary,
+  host: mqtt_host,
+  port: mqtt_port,
+  clientid: "sensor_readings_rotary",
+  clean_start: false,
+  username: mqtt_username,
+  password: mqtt_password,
+  name: :emqtt_rotary
+
+config :mqtt_sensors, :emqtt_rgb,
+  host: mqtt_host,
+  port: mqtt_port,
+  clientid: "sensor_readings_rgb",
+  clean_start: false,
+  username: mqtt_username,
+  password: mqtt_password,
+  name: :emqtt_rgb
+
+config :mqtt_sensors, :emqtt_gyro,
+  host: mqtt_host,
+  port: mqtt_port,
+  clientid: "sensor_readings_gyro",
+  clean_start: false,
+  username: mqtt_username,
+  password: mqtt_password,
+  name: :emqtt_gyro
 
 config :mqtt_sensors, :interval, 1000
 

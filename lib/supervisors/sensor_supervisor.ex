@@ -11,8 +11,13 @@ defmodule MqttSensors.SensorSupervisor do
       [
         Supervisor.child_spec({MqttSensors.DhTemperature, []}, restart: :temporary),
         Supervisor.child_spec({MqttSensors.KeypadSensor, []}, restart: :temporary),
+        Supervisor.child_spec({MqttSensors.Joystick, []}, restart: :temporary),
+        Supervisor.child_spec({MqttSensors.Rotary, []}, restart: :temporary),
         Supervisor.child_spec({MqttSensors.Photoresistor, []}, restart: :temporary),
-        Supervisor.child_spec({MqttSensors.UltrasonicSensor, []}, restart: :transient)
+        Supervisor.child_spec({MqttSensors.Rgb, []}, restart: :temporary),
+        Supervisor.child_spec({MqttSensors.IrReceiver, []}, restart: :temporary),
+        Supervisor.child_spec({MqttSensors.Gyro, []}, restart: :temporary),
+        Supervisor.child_spec({MqttSensors.UltrasonicSensor, []}, restart: :temporary)
       ]
 
     Supervisor.init(children, strategy: :one_for_one)

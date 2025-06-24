@@ -27,6 +27,8 @@
 	padding-top: var(--size);
 	box-sizing: border-box;
 	aspect-ratio: 1/1;
+	background: #e2e8f0;
+	border-radius: 10px;
 	background-image:
 		linear-gradient(#0000 calc(var(--cy) * 100% / var(--c) - 1px),
 			#0008 0 calc(var(--cy) * 100% / var(--c) + 1px),
@@ -129,4 +131,88 @@ article {
 .tooltip:hover .tooltiptext {
 	visibility: visible;
 	opacity: 1;
+}
+
+/* Rotary Encoder */
+.gauge {
+	height: 85px;
+	/*overflow: hidden;*/
+	position: relative;
+	width: 170px;
+	margin: auto;
+	animation-iteration-count: 1;
+}
+
+.gauge .arc {
+	background-image:
+		radial-gradient(#475569 0, #475569 60%, transparent 60%),
+		conic-gradient(red 0,
+			#f17323 70deg,
+			#af46d5 135deg,
+			#4667d5 135deg,
+			#19d7fb 180deg,
+			#475569 180deg,
+			#475569 360deg);
+	background-position:
+		center center,
+		center center;
+	background-repeat: no-repeat;
+	background-size:
+		100% 100%,
+		100% 100%;
+	border-radius: 50%;
+	border-style: none;
+	height: 170px;
+	position: relative;
+	transform: rotate(-90deg);
+	width: 100%;
+}
+
+.gauge .pointer {
+	background: #475569;
+	border: 1px solid #000;
+	border-radius: 5px;
+	bottom: 0;
+	content: "";
+	height: 6px;
+	left: 0;
+	position: absolute;
+	transform-origin: 85px 0;
+	width: 20px;
+	z-index: 5;
+}
+
+.gauge .mask::before,
+.gauge .mask::after {
+	background-image: radial-gradient(transparent 0,
+			transparent 50%,
+			#475569 50%,
+			#475569 100%);
+	clip-path: polygon(0 50%, 100% 50%, 100% 100%, 0% 100%);
+	content: "";
+	height: 18px;
+	position: absolute;
+	width: 18px;
+}
+
+.gauge .mask::before {
+	left: -2px;
+	bottom: 0;
+}
+
+.gauge .mask::after {
+	bottom: 0;
+	right: -2px;
+}
+
+.gauge .label {
+	bottom: 20px;
+	font-size: 16px;
+	font-weight: 700;
+	left: 0;
+	line-height: 26px;
+	position: absolute;
+	text-align: center;
+	width: 100%;
+	color: white;
 }

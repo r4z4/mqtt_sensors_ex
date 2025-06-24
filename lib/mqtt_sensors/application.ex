@@ -9,7 +9,7 @@ defmodule MqttSensors.Application do
   def start(_type, _args) do
     children = [
       MqttSensorsWeb.Telemetry,
-      MqttSensors.Repo,
+      # MqttSensors.Repo,
       {DNSCluster, query: Application.get_env(:mqtt_sensors, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: MqttSensors.PubSub},
       # Start the Finch HTTP client for sending emails

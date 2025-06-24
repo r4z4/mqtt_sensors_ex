@@ -10,7 +10,7 @@ defmodule MqttSensorsWeb.ChartsLive do
   alias Phoenix.PubSub
   require Logger
 
-  @topics ~w(dh_data hc_sr04_data keypad_press photoresistor)
+  @topics ~w(dh_data hc_sr04_data keypad_press photoresistor rotary_encoder rgb gyro ir)
 
   @impl true
   def mount(_params, _session, socket) do
@@ -33,13 +33,20 @@ defmodule MqttSensorsWeb.ChartsLive do
 
     {:ok,
      socket
+     |> assign(:border_map, %{one: nil, two: nil, three: nil, four: nil, five: nil, six: nil})
      |> assign(:hc_sr04_data_x_value, 0)
      |> stream(:hc_sr04_data_stream, [])
      |> assign(:photoresistor, 0)
      |> assign(:hsl, "hsl(0, 100%, 0%)")
+     |> assign(:encoder_rotate, 90.0)
+     |> assign(:encoder_value, 0)
+     |> assign(:rgb_css, "rgb(0,0,0)")
+     |> stream(:gyro_stream, [])
      |> assign(:dh_data_x_value, 0)
      |> stream(:dh_data_stream, [])}
   end
+
+  # class="border-2 border-solid p-4"
 
   @impl true
   def render(assigns) do
@@ -47,9 +54,10 @@ defmodule MqttSensorsWeb.ChartsLive do
     # dbg(assigns.streams.hc_sr04_data_stream)
 
     ~H"""
+    <h1 class="text-center text-white">Sensor Readings</h1>
     <div class="w-full">
       <div class="container">
-        <article id="plot_article_hc">
+        <article id="plot_article_hc" class={@border_map[:one]}>
           <div
             phx-update="stream"
             class="axis"
@@ -61,7 +69,7 @@ defmodule MqttSensorsWeb.ChartsLive do
             <% end %>
           </div>
         </article>
-        <article id="plot_article_dh">
+        <article id="plot_article_dh" class={@border_map[:two]}>
           <div
             phx-update="stream"
             class="axis"
@@ -74,9 +82,42 @@ defmodule MqttSensorsWeb.ChartsLive do
           </div>
         </article>
       </div>
-      <div id="photoresistor">
-        {@photoresistor}
-        <div style={"width: 100px; height: 100px; background-color: #{@hsl};"}></div>
+      <div class="container">
+        <article class={@border_map[:three]}>
+          <div id="photoresistor">
+            <div style={"margin: auto; width: 100px; height: 100px; background-color: #{@hsl}; border-radius: 50%"}>
+            </div>
+            <div class="m-auto text-center text-white">{@photoresistor}</div>
+          </div>
+        </article>
+        <article class={@border_map[:four]}>
+          <div id="rotary_encoder" class={"gauge #{if @encoder_value == 1, do: 'animate-ping'}"}>
+            <div class="arc"></div>
+            <div
+              class="pointer"
+              style={"transform: rotate(#{@encoder_rotate}deg) translateX(2px) translateY(-6px)"}
+              ;
+            >
+            </div>
+            <div class="mask"></div>
+            <div class="label">{@encoder_value}</div>
+          </div>
+        </article>
+      </div>
+      <div class="container">
+        <article class={@border_map[:five]}>
+          <div id="rgb">
+            <div style={"margin: auto; width: 100px; height: 100px; background-color: #{@rgb_css}; border-radius: 50%"}>
+            </div>
+          </div>
+        </article>
+        <article id="gyro" class={@border_map[:six]}>
+          <div phx-update="stream" id="gyro_data">
+            <%= for {id, sent} <- @streams.gyro_stream do %>
+              <div class="text-xs" id={id}>{sent[:data]}</div>
+            <% end %>
+          </div>
+        </article>
       </div>
     </div>
     """
@@ -107,12 +148,38 @@ defmodule MqttSensorsWeb.ChartsLive do
   #   client_pid: #PID<0.674.0>
   # }
 
+  def handle_info({:update, %{topic: "ir", data: data}}, socket) do
+    # Get current border
+    key = get_current_border(socket.assigns.border_map)
+    # Determine next border based on IR input
+    next = get_next_value(key, String.to_existing_atom(data))
+    # test - not grid will not need p-4
+    border_style = "border-2 border-solid p-4"
+
+    new_map =
+      if next do
+        socket.assigns.border_map
+        |> Map.put(key, nil)
+        |> Map.put(next, border_style)
+      else
+        socket.assigns.border_map
+      end
+
+    dbg(new_map)
+
+    {:noreply,
+     socket
+     |> assign(:border_map, new_map)}
+  end
+
   @impl true
   def handle_info({:clear_stream, topic}, socket) do
     IO.puts("Clearing Stream")
 
     # Before we clear it, save all records to DB. Batch update.
-    GenServer.cast(module_name(topic), :persist_stream)
+    unless topic == "gyro" do
+      GenServer.cast(module_name(topic), :persist_stream)
+    end
 
     {:noreply,
      socket
@@ -149,10 +216,46 @@ defmodule MqttSensorsWeb.ChartsLive do
   end
 
   @impl true
+  def handle_info({:update, %{topic: "rotary_encoder", data: data}}, socket) do
+    IO.puts("LV Handle Info Rotary - Counter => #{data[:ctr]}")
+    speed = data[:ctr]
+    angle = 90 + speed * 0.9
+
+    {:noreply,
+     socket
+     |> assign(:encoder_rotate, angle)
+     |> assign(:encoder_value, speed)}
+  end
+
+  @impl true
+  def handle_info({:update, %{topic: "gyro", data: data}}, socket) do
+    IO.puts("LV Handle Info Gyro - #{data[:id]} && #{data[:data]}")
+
+    if Kernel.rem(data[:id], 20) == 0 do
+      send(self(), {:clear_stream, "gyro"})
+    end
+
+    {:noreply,
+     socket
+     |> stream(:gyro_stream, [data])}
+  end
+
+  @impl true
+  def handle_info({:update, %{topic: "rgb", data: data}}, socket) do
+    IO.puts("LV Handle Info RGB")
+    dbg(data)
+    rgb_css = "rgb(#{data[:r]}, #{data[:g]}, #{data[:b]})"
+
+    {:noreply,
+     socket
+     |> assign(:rgb_css, rgb_css)}
+  end
+
+  @impl true
   def handle_info({:update, %{topic: topic, time: time, data: data}}, socket) do
     IO.puts("LV Handle Info Topic = #{topic}")
     id = socket.assigns[String.to_existing_atom("#{topic}_x_value")]
-    dbg(id)
+    # dbg(id)
 
     maps =
       case topic do
@@ -212,6 +315,53 @@ defmodule MqttSensorsWeb.ChartsLive do
   def handle_info({:DOWN, _reference, _process, _pid, _status}, socket) do
     IO.puts("Down Received. Task Destroyed.")
     {:noreply, socket}
+  end
+
+  defp get_current_border(border_map) do
+    # Find the not nil
+    res = Enum.find(border_map, fn {_k, v} -> v end)
+
+    IO.puts("Get Current Border Res")
+    dbg(res)
+
+    if res do
+      {key, value} = res
+      key
+    else
+      nil
+    end
+  end
+
+  defp get_next_value(key, ir_signal) do
+    # All nil on start, so just start at top left
+    IO.puts("Get Next Value Vars")
+    dbg(key)
+    dbg(ir_signal)
+
+    if !key do
+      :one
+    else
+      signal_map = %{
+        one: %{left: nil, up: nil, right: :two, down: :three, menu: nil, play: nil, center: nil},
+        two: %{left: :one, up: nil, right: nil, down: :four, menu: nil, play: nil, center: nil},
+        three: %{
+          left: nil,
+          up: :one,
+          right: :four,
+          down: :five,
+          menu: nil,
+          play: nil,
+          center: nil
+        },
+        four: %{left: :three, up: :two, right: nil, down: :six, menu: nil, play: nil, center: nil},
+        five: %{left: nil, up: :three, right: :six, down: nil, menu: nil, play: nil, center: nil},
+        six: %{left: :five, up: :four, right: nil, down: nil, menu: nil, play: nil, center: nil}
+      }
+
+      moves = signal_map[key]
+      dbg(moves)
+      moves[ir_signal]
+    end
   end
 
   # defp schedule_send_data(x_value) do
