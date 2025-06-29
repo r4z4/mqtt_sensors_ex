@@ -17,6 +17,7 @@ defmodule MqttSensors.SensorSupervisor do
         Supervisor.child_spec({MqttSensors.Rgb, []}, restart: :temporary),
         Supervisor.child_spec({MqttSensors.IrReceiver, []}, restart: :temporary),
         Supervisor.child_spec({MqttSensors.Gyro, []}, restart: :temporary),
+        Supervisor.child_spec({MqttSensors.LD2410, []}, restart: :temporary),
         Supervisor.child_spec({MqttSensors.UltrasonicSensor, []}, restart: :temporary)
       ]
 

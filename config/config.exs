@@ -94,6 +94,15 @@ config :mqtt_sensors, :emqtt_rgb,
   password: mqtt_password,
   name: :emqtt_rgb
 
+config :mqtt_sensors, :emqtt_ld2410,
+  host: mqtt_host,
+  port: mqtt_port,
+  clientid: "sensor_readings_ld2410",
+  clean_start: false,
+  username: mqtt_username,
+  password: mqtt_password,
+  name: :emqtt_ld2410
+
 config :mqtt_sensors, :emqtt_gyro,
   host: mqtt_host,
   port: mqtt_port,

@@ -10,7 +10,7 @@ defmodule MqttSensorsWeb.ChartsLive do
   alias Phoenix.PubSub
   require Logger
 
-  @topics ~w(dh_data hc_sr04_data keypad_press photoresistor rotary_encoder rgb gyro ir)
+  @topics ~w(dh_data hc_sr04_data keypad_press photoresistor rotary_encoder rgb gyro ir ld2410)
 
   @impl true
   def mount(_params, _session, socket) do
@@ -33,7 +33,16 @@ defmodule MqttSensorsWeb.ChartsLive do
 
     {:ok,
      socket
-     |> assign(:border_map, %{one: nil, two: nil, three: nil, four: nil, five: nil, six: nil})
+     |> assign(:border_map, %{
+       one: nil,
+       two: nil,
+       three: nil,
+       four: nil,
+       five: nil,
+       six: nil,
+       seven: nil,
+       eight: nil
+     })
      |> assign(:hc_sr04_data_x_value, 0)
      |> stream(:hc_sr04_data_stream, [])
      |> assign(:photoresistor, 0)
@@ -41,6 +50,7 @@ defmodule MqttSensorsWeb.ChartsLive do
      |> assign(:encoder_rotate, 90.0)
      |> assign(:encoder_value, 0)
      |> assign(:rgb_css, "rgb(0,0,0)")
+     |> assign(:human_css, "rgb(0,0,0)")
      |> stream(:gyro_stream, [])
      |> assign(:dh_data_x_value, 0)
      |> stream(:dh_data_stream, [])}
@@ -117,6 +127,18 @@ defmodule MqttSensorsWeb.ChartsLive do
               <div class="text-xs" id={id}>{sent[:data]}</div>
             <% end %>
           </div>
+        </article>
+      </div>
+      <div class="container">
+        <article class={@border_map[:seven]}>
+          <div id="ld2410">
+            <div style="margin: auto; width: 100px; height: 20px; background-color: white; border: 2px solid black; border-radius: 10%; position: relative;">
+              <div id="human" style={@human_css}></div>
+            </div>
+          </div>
+        </article>
+        <article class={@border_map[:eight]}>
+          <div></div>
         </article>
       </div>
     </div>
@@ -213,6 +235,33 @@ defmodule MqttSensorsWeb.ChartsLive do
      socket
      |> assign(:photoresistor, data)
      |> assign(:hsl, color)}
+  end
+
+  @impl true
+  def handle_info({:update, %{topic: "ld2410", data: data}}, socket) do
+    mv_color =
+      case data[:mv] do
+        0 -> ""
+        # Moving
+        1 -> "red"
+        # Stationary
+        2 -> "blue"
+      end
+
+    dist = data[:dist]
+    # energy = data[:energy]
+
+    # at very left = "width: 10px; height: 10px; background-color: green; border-radius: 50%; top: 50%; left: 0%; transform: translate(0%, -50%);  position: absolute;"
+    human_css =
+      if data[:mv] == 0 do
+        ""
+      else
+        "width: 10px; height: 10px; background-color: #{mv_color}; border-radius: 50%; top: 50%; left: 0%; transform: translate(#{dist}%, -50%);  position: absolute;"
+      end
+
+    {:noreply,
+     socket
+     |> assign(:human_css, human_css)}
   end
 
   @impl true
@@ -354,8 +403,34 @@ defmodule MqttSensorsWeb.ChartsLive do
           center: nil
         },
         four: %{left: :three, up: :two, right: nil, down: :six, menu: nil, play: nil, center: nil},
-        five: %{left: nil, up: :three, right: :six, down: nil, menu: nil, play: nil, center: nil},
-        six: %{left: :five, up: :four, right: nil, down: nil, menu: nil, play: nil, center: nil}
+        five: %{
+          left: nil,
+          up: :three,
+          right: :six,
+          down: :seven,
+          menu: nil,
+          play: nil,
+          center: nil
+        },
+        six: %{
+          left: :five,
+          up: :four,
+          right: nil,
+          down: :eight,
+          menu: nil,
+          play: nil,
+          center: nil
+        },
+        seven: %{
+          left: nil,
+          up: :five,
+          right: :eight,
+          down: nil,
+          menu: nil,
+          play: nil,
+          center: nil
+        },
+        eight: %{left: :seven, up: :six, right: nil, down: nil, menu: nil, play: nil, center: nil}
       }
 
       moves = signal_map[key]
